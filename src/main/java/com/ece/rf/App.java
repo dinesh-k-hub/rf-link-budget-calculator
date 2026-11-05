@@ -7,7 +7,8 @@ public class App {
 
     // Calculate Free Space Path Loss (FSPL)
     // Frequency is in MHz and distance is in km.
-    public static double calculateFSPL(double frequencyMHz, double distanceKm) {
+    public static double calculateFSPL(
+            double frequencyMHz, double distanceKm) {
 
         if (frequencyMHz <= 0 || distanceKm <= 0) {
             throw new IllegalArgumentException(
@@ -46,50 +47,87 @@ public class App {
 
     public static void main(String[] args) {
 
-        Scanner scanner = new Scanner(System.in);
+        double txPower;
+        double txGain;
+        double rxGain;
+        double frequency;
+        double distance;
+        double cableLoss;
+        double systemLoss;
+        double sensitivity;
 
         System.out.println("======================================");
         System.out.println("       RF LINK BUDGET CALCULATOR");
         System.out.println("======================================");
 
-        System.out.print("Enter Transmitter Power (dBm): ");
-        double txPower = scanner.nextDouble();
+        // Jenkins mode: receive 8 command-line arguments
+        if (args.length == 8) {
 
-        System.out.print("Enter Transmitter Antenna Gain (dBi): ");
-        double txGain = scanner.nextDouble();
+            txPower = Double.parseDouble(args[0]);
+            txGain = Double.parseDouble(args[1]);
+            rxGain = Double.parseDouble(args[2]);
+            frequency = Double.parseDouble(args[3]);
+            distance = Double.parseDouble(args[4]);
+            cableLoss = Double.parseDouble(args[5]);
+            systemLoss = Double.parseDouble(args[6]);
+            sensitivity = Double.parseDouble(args[7]);
 
-        System.out.print("Enter Receiver Antenna Gain (dBi): ");
-        double rxGain = scanner.nextDouble();
+            System.out.println("Running in Jenkins Parameter Mode");
 
-        System.out.print("Enter Frequency (MHz): ");
-        double frequency = scanner.nextDouble();
+        } else {
 
-        System.out.print("Enter Distance (km): ");
-        double distance = scanner.nextDouble();
+            // Manual console mode
+            Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter Cable Loss (dB): ");
-        double cableLoss = scanner.nextDouble();
+            System.out.print("Enter Transmitter Power (dBm): ");
+            txPower = scanner.nextDouble();
 
-        System.out.print("Enter System Loss (dB): ");
-        double systemLoss = scanner.nextDouble();
+            System.out.print("Enter Transmitter Antenna Gain (dBi): ");
+            txGain = scanner.nextDouble();
 
-        System.out.print("Enter Receiver Sensitivity (dBm): ");
-        double sensitivity = scanner.nextDouble();
+            System.out.print("Enter Receiver Antenna Gain (dBi): ");
+            rxGain = scanner.nextDouble();
+
+            System.out.print("Enter Frequency (MHz): ");
+            frequency = scanner.nextDouble();
+
+            System.out.print("Enter Distance (km): ");
+            distance = scanner.nextDouble();
+
+            System.out.print("Enter Cable Loss (dB): ");
+            cableLoss = scanner.nextDouble();
+
+            System.out.print("Enter System Loss (dB): ");
+            systemLoss = scanner.nextDouble();
+
+            System.out.print("Enter Receiver Sensitivity (dBm): ");
+            sensitivity = scanner.nextDouble();
+
+            scanner.close();
+        }
 
         try {
+
             double fspl = calculateFSPL(frequency, distance);
 
             double receivedPower = calculateReceivedPower(
-                    txPower, txGain, rxGain,
-                    fspl, cableLoss, systemLoss);
+                    txPower,
+                    txGain,
+                    rxGain,
+                    fspl,
+                    cableLoss,
+                    systemLoss);
 
             double linkMargin = calculateLinkMargin(
                     receivedPower, sensitivity);
 
             System.out.println("\n========== CALCULATION RESULTS ==========");
 
-            System.out.printf("Free Space Path Loss : %.2f dB%n", fspl);
-            System.out.printf("Received Power       : %.2f dBm%n", receivedPower);
+            System.out.printf("Transmitter Power     : %.2f dBm%n", txPower);
+            System.out.printf("Frequency             : %.2f MHz%n", frequency);
+            System.out.printf("Distance              : %.2f km%n", distance);
+            System.out.printf("Free Space Path Loss  : %.2f dB%n", fspl);
+            System.out.printf("Received Power        : %.2f dBm%n", receivedPower);
             System.out.printf("Link Margin           : %.2f dB%n", linkMargin);
 
             if (linkMargin > 0) {
@@ -103,9 +141,9 @@ public class App {
             System.out.println("==========================================");
 
         } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
 
-        scanner.close();
+            System.out.println("Error: " + e.getMessage());
+
+        }
     }
 }
