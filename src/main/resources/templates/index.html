@@ -1,0 +1,195 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF Link Budget Calculator</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 30px 15px;
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px #00000012;
+        }
+        h1 { text-align: center; color: #123b70; }
+        .subtitle { text-align: center; color: #64748b; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 25px;
+        }
+        label { display: block; font-weight: bold; margin-bottom: 7px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            margin-top: 24px;
+            padding: 14px;
+            background: #1769aa;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #104e82; }
+        .results {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f1f7ff;
+            border-radius: 9px;
+        }
+        .results h2 { color: #123b70; }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dbe5f0;
+        }
+        #status { font-weight: bold; }
+        .error { color: #dc2626; margin-top: 15px; }
+        @media(max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>RF Link Budget Calculator</h1>
+    <p class="subtitle">Real-Time Wireless Link Analysis</p>
+
+    <div class="grid">
+        <div>
+            <label>Transmitter Power (dBm)</label>
+            <input id="txPower" type="number" value="20" step="any">
+        </div>
+        <div>
+            <label>Transmitter Antenna Gain (dBi)</label>
+            <input id="txGain" type="number" value="2" step="any">
+        </div>
+        <div>
+            <label>Receiver Antenna Gain (dBi)</label>
+            <input id="rxGain" type="number" value="2" step="any">
+        </div>
+        <div>
+            <label>Frequency (MHz)</label>
+            <input id="frequency" type="number" value="2400" step="any">
+        </div>
+        <div>
+            <label>Distance (km)</label>
+            <input id="distance" type="number" value="1" step="any">
+        </div>
+        <div>
+            <label>Cable Loss (dB)</label>
+            <input id="cableLoss" type="number" value="1" step="any">
+        </div>
+        <div>
+            <label>System Loss (dB)</label>
+            <input id="systemLoss" type="number" value="2" step="any">
+        </div>
+        <div>
+            <label>Receiver Sensitivity (dBm)</label>
+            <input id="sensitivity" type="number" value="-90" step="any">
+        </div>
+    </div>
+
+    <button onclick="calculate()">Calculate Link Budget</button>
+
+    <div id="error" class="error"></div>
+
+    <div id="results" class="results">
+        <h2>Calculation Results</h2>
+        <div class="result-row">
+            <span>Free Space Path Loss</span>
+            <strong id="fspl"></strong>
+        </div>
+        <div class="result-row">
+            <span>Received Power</span>
+            <strong id="receivedPower"></strong>
+        </div>
+        <div class="result-row">
+            <span>Link Margin</span>
+            <strong id="linkMargin"></strong>
+        </div>
+        <div class="result-row">
+            <span>Link Status</span>
+            <strong id="status"></strong>
+        </div>
+    </div>
+</div>
+
+<script>
+async function calculate() {
+    const fields = [
+        "txPower", "txGain", "rxGain", "frequency",
+        "distance", "cableLoss", "systemLoss", "sensitivity"
+    ];
+
+    const values = {};
+    for (const field of fields) {
+        const value = document.getElementById(field).value;
+        if (value.trim() === "" || !Number.isFinite(Number(value))) {
+            document.getElementById("error").textContent =
+                "Please enter valid numbers in all fields.";
+            document.getElementById("results").style.display = "none";
+            return;
+        }
+        values[field] = Number(value);
+    }
+
+    document.getElementById("error").textContent = "";
+
+    try {
+        const response = await fetch("/api/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Calculation failed.");
+        }
+
+        document.getElementById("fspl").textContent =
+            data.fspl.toFixed(2) + " dB";
+        document.getElementById("receivedPower").textContent =
+            data.receivedPower.toFixed(2) + " dBm";
+        document.getElementById("linkMargin").textContent =
+            data.linkMargin.toFixed(2) + " dB";
+
+        const status = document.getElementById("status");
+        status.textContent = data.linkAvailable ? "LINK AVAILABLE" : "LINK UNAVAILABLE";
+        status.style.color = data.linkAvailable ? "green" : "red";
+
+        document.getElementById("results").style.display = "block";
+    } catch (error) {
+        document.getElementById("error").textContent = error.message;
+        document.getElementById("results").style.display = "none";
+    }
+}
+</script>
+</body>
+</html>
+```
